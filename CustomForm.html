@@ -1,0 +1,114 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Array Adjuster PWA</title>
+    <link rel="stylesheet" href="styles.css">
+    <link rel="manifest" href="manifest.json">
+    <script>
+        if ('serviceWorker' in navigator) {
+            navigator.serviceWorker.register('/service-worker.js').then(function(registration) {
+                console.log('Service Worker registered with scope:', registration.scope);
+            }).catch(function(error) {
+                console.error('Service Worker registration failed:', error);
+            });
+        }
+    </script>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            margin: 20px;
+            padding: 0;
+            background-color: #f0f0f0;
+            text-align: center;
+        }
+        input, button {
+            margin: 10px;
+            padding: 10px;
+        }
+    </style>
+</head>
+<body>
+    <h1>Array Adjuster PWA</h1>
+    <textarea id="xArray" placeholder="Enter X array, e.g., 1, 2, 3"></textarea><br>
+    <textarea id="yArray" placeholder="Enter Y array, e.g., 4, 5, 6"></textarea><br>
+    <input type="number" id="minHeight" placeholder="Enter min height"><br>
+    <input type="number" id="heightRatio" placeholder="Enter height ratio"><br>
+    <input type="number" id="realRatio" placeholder="Enter real-life ratio"><br>
+    <input type="number" id="mmBlockRatio" placeholder="Enter millimeter block ratio"><br>
+    <button onclick="adjustArrays()">Adjust Arrays</button>
+    <div id="output"></div>
+
+    <script>
+        function adjustArrays() {
+            const xArray = document.getElementById("xArray").value.split(",").map(Number);
+            const yArray = document.getElementById("yArray").value.split(",").map(Number);
+            const minHeight = parseFloat(document.getElementById("minHeight").value);
+            const heightRatio = parseFloat(document.getElementById("heightRatio").value);
+            const realRatio = parseFloat(document.getElementById("realRatio").value);
+            const mmBlockRatio = parseFloat(document.getElementById("mmBlockRatio").value);
+            
+            if (xArray.length !== yArray.length) {
+                document.getElementById("output").innerHTML = "X and Y arrays must be of the same length.";
+                return;
+            }
+            
+            // Adjustment formulas
+            const adjustedY = yArray.map(y => ((y - minHeight) * 1000) / heightRatio);
+            const adjustedX = xArray.map(x => x * (realRatio / mmBlockRatio));
+
+            let outputString = "";
+            for (let i = 0; i < adjustedX.length; i++) {
+                outputString += `Point ${i + 1}: x${i + 1}=${adjustedX[i]} y${i + 1}=${adjustedY[i]}<br>`;
+            }
+
+            document.getElementById("output").innerHTML = outputString;
+        }
+    </script>
+</body>
+</html>
+
+<!-- Manifest file (manifest.json) -->
+{
+  "name": "Array Adjuster PWA",
+  "short_name": "Adjuster",
+  "start_url": ".",
+  "display": "standalone",
+  "background_color": "#ffffff",
+  "description": "A simple app to adjust arrays.",
+  "icons": [
+    {
+      "src": "icon.png",
+      "sizes": "192x192",
+      "type": "image/png"
+    }
+  ]
+}
+
+<!-- Service Worker (service-worker.js) -->
+const CACHE_NAME = 'array-adjuster-cache-v1';
+const urlsToCache = [
+    '/',
+    '/index.html',
+    '/styles.css',
+    '/manifest.json'
+];
+
+self.addEventListener('install', (event) => {
+    event.waitUntil(
+        caches.open(CACHE_NAME)
+            .then((cache) => {
+                return cache.addAll(urlsToCache);
+            })
+    );
+});
+
+self.addEventListener('fetch', (event) => {
+    event.respondWith(
+        caches.match(event.request)
+            .then((response) => {
+                return response || fetch(event.request);
+            })
+    );
+});
